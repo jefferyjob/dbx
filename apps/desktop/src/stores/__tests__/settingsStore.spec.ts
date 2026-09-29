@@ -411,6 +411,12 @@ describe("normalizeEditorSettings", () => {
     expect(normalizeEditorSettings({ dataGridSearchMode: "invalid" as any }).dataGridSearchMode).toBe("filter");
   });
 
+  it("defaults double-click inside a string to selecting the whole value and preserves word mode", () => {
+    expect(normalizeEditorSettings({}).doubleClickStringSelectionMode).toBe("content");
+    expect(normalizeEditorSettings({ doubleClickStringSelectionMode: "word" }).doubleClickStringSelectionMode).toBe("word");
+    expect(normalizeEditorSettings({ doubleClickStringSelectionMode: "invalid" as any }).doubleClickStringSelectionMode).toBe("content");
+  });
+
   it("defaults the data grid row number column to the view position and preserves original row numbers", () => {
     expect(normalizeEditorSettings({}).dataGridRowNumberMode).toBe("view");
     expect(normalizeEditorSettings({ dataGridRowNumberMode: "source" }).dataGridRowNumberMode).toBe("source");
@@ -1274,7 +1280,9 @@ describe("settingsStore persisted settings initialization", () => {
     const { useSettingsStore } = await import("@/stores/settingsStore");
     const firstStore = useSettingsStore();
     await firstStore.initEditorSettings();
+    expect(firstStore.editorSettings.colorizeConnectionTabs).toBe(true);
     await firstStore.updateEditorSettingsAndPersist({
+      colorizeConnectionTabs: false,
       tabPlacement: "left",
       tabGroupMode: "connection",
       tabSortMode: "title-asc",
@@ -1288,6 +1296,7 @@ describe("settingsStore persisted settings initialization", () => {
     await restartedStore.initEditorSettings();
 
     expect(restartedStore.editorSettings).toMatchObject({
+      colorizeConnectionTabs: false,
       tabPlacement: "left",
       tabGroupMode: "connection",
       tabSortMode: "title-asc",

@@ -25,7 +25,7 @@ import {
   localTableSearchParentTypes,
 } from "@/lib/sidebar/sidebarSearchTree";
 import { createSidebarLabelMatcher } from "@/lib/sidebar/sidebarSearch";
-import { collectSidebarRegexIndexScopes, resolveSidebarRemoteSearchQuery, resolveSidebarSearchDispatchMode } from "@/lib/sidebar/sidebarRegexSearchIndex";
+import { collectSidebarRegexIndexScopes, resolveSidebarRemoteSearchQuery, resolveSidebarSearchDispatchMode, shouldRestoreTrackedSidebarSearchTargetsInRegexMode } from "@/lib/sidebar/sidebarRegexSearchIndex";
 import { needsSidebarObjectGroupDiscovery } from "@/lib/sidebar/sidebarSearchDiscovery";
 import { isSidebarSearchPrunedDatabaseNode, resolveSidebarSearchDatabaseScope } from "@/lib/sidebar/sidebarSearchDatabaseScope";
 import { createSidebarSearchExpansionState } from "@/lib/sidebar/sidebarSearchExpansionState";
@@ -302,7 +302,10 @@ watch([deferredSearchQuery, regexMode], ([newQuery, isRegexMode], [oldQuery, was
   if (dispatchMode === "regex") {
     // Regex search is a read-only projection over live nodes and the local
     // table index. It must never trigger ensureConnected/listTables.
-    const restoreTasks = restoreTrackedSearchTargets();
+    // Keep results already loaded by an ordinary query until the regex is
+    // cleared. Restoring them here can empty the tree when this connection has
+    // no complete local table index yet (for example: "user" -> Regex mode).
+    const restoreTasks = shouldRestoreTrackedSidebarSearchTargetsInRegexMode(newQuery) ? restoreTrackedSearchTargets() : [];
     const searchGeneration = sidebarSearchLoadingTracker.begin();
     isSidebarSearchLoading.value = true;
     void Promise.allSettled([loadRegexTableSearchIndexes(), runSidebarSearchTasks(restoreTasks)])
